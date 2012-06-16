@@ -14,14 +14,18 @@ Java Class files
 * Sapplet.class 
 * fft.class 
 * defaultImage.class 
+
 Java source code files 
 * Sapplet.java 
 * fft.java 
+
 Database 
 * hrtf512.bin (contains the level data of HRTF) 
 * phase512.bin (contains the phase data of HRTF) 
+
 Gif 
 * default.gif (A background image) 
+
 SOPA file 
 * kusa22k.sopa (A SOPA file to be reproduced) 
 
