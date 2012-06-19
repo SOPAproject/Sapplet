@@ -149,7 +149,8 @@ public class Sapplet extends Applet implements Runnable
 		}
 		else
 		{
-			g.drawString("Good bye", 60,20);
+			g.drawString("If you want to replay this demonstration,", 60,20);
+            g.drawString("please refresh this page.", 60,40);
 		}
 		g.drawString("< --", 20,160);
 		g.drawString("-- >", 360,160);
