@@ -2,7 +2,7 @@
 
 This repository provides source code of a Java applet 'Sapplet.class' and its related files. Sapplet.class is an applet for reproduction of a SOPA file.
 
-SOPA that stands for 'Stream Of Panoramic Audio' is an audio data format proposed by us and can be used for transmitting panoramic audio signals online.
+SOPA that stands for 'Stream Of Panoramic Audio' is a custom audio data format proposed by us and can be used for transmitting panoramic audio signals online.
 
 Detail description about the SOPA project is provided in the following Web site.
 
