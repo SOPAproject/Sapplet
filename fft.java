@@ -2,9 +2,9 @@ class fft{
 	int iTap;
 	final double dWpi = 2 * Math.PI;
 	
-	boolean fastFt(double dData[],double dImg[],double dPower[],double dPhase[],boolean isRev){
+	boolean fastFt(double dData[],double dImg[],boolean isRev){
 		double sc,f,c,s,t,c1,s1,x1,kyo1;
-		double dHan,dDum;
+		double dHan,dDum,dPower,dPhase;
 		int n,n1,j,i,k,ns,l1,i0,i1;
 		int iInt;
 
@@ -76,8 +76,10 @@ class fft{
 			{
 				dData[iInt] /= (double)iTap;
 				dImg[iInt] /= (double)iTap;
-				dPower[iInt] = Math.sqrt(dData[iInt] * dData[iInt] + dImg[iInt] * dImg[iInt]);
-				dPhase[iInt] = Math.atan2(dImg[iInt],dData[iInt]);
+				dPower = Math.sqrt(dData[iInt] * dData[iInt] + dImg[iInt] * dImg[iInt]);
+				dPhase = Math.atan2(dImg[iInt],dData[iInt]);
+				dData[iInt] = dPower;
+				dImg[iInt] = dPhase;
 			}
 		}
 		return true;

@@ -68,10 +68,10 @@ public class Sapplet extends Applet implements Runnable
 	public void init()
 	{
 		strFilename = "kusa22k.sopa";
+		defaultImage.img = getImage(getDocumentBase(),"default.gif");
 
 		thread = new Thread(this);
 		thread.start();
-		defaultImage.img = getImage(getDocumentBase(),"default.gif");
 		addMouseListener(new MouseAdapter()
 		{
 			public void mouseClicked(MouseEvent me)
@@ -81,7 +81,6 @@ public class Sapplet extends Applet implements Runnable
 				if(nMsg == 2 || nMsg == -2)
 				{
 					nMsg = -1;
-					repaint();
 				}
 				else if(nMsg != -1)
 				{
@@ -91,7 +90,6 @@ public class Sapplet extends Applet implements Runnable
 						nRot -= 2;
 						if(nRot <= -36)
 							nRot += 72;
-						repaint();
 					}
 					else if(x < 400 / 4)
 					{
@@ -99,11 +97,11 @@ public class Sapplet extends Applet implements Runnable
 						nRot += 2;
 						if(nRot > 36)
 							nRot -= 72;
-						repaint();
 					}
 					else
 						nMsg ++;
 				}
+				repaint();
 			}
 		});
 	}
@@ -150,7 +148,7 @@ public class Sapplet extends Applet implements Runnable
 		else
 		{
 			g.drawString("If you want to replay this demonstration,", 60,20);
-            g.drawString("please refresh this page.", 60,40);
+			g.drawString("please refresh this page.", 60,40);
 		}
 		g.drawString("< --", 20,160);
 		g.drawString("-- >", 360,160);
@@ -184,7 +182,7 @@ public class Sapplet extends Applet implements Runnable
 			}
 			catch(InterruptedException e){}
 		}
-		repaint();
+//		repaint();
 
 		
 		// Prepare HRTF (level) database
@@ -376,20 +374,12 @@ public class Sapplet extends Applet implements Runnable
 			int nBytesWritten = 0;
 			byte[]	abData = new byte[EXTERNAL_BUFFER_SIZE];
 			byte[] bRet = new byte[2];
-			int[]	iAngl = new int[iSize];
 			short[][] sData = new short[2][EXTERNAL_BUFFER_SIZE / 2];
 			short[][] sVal = new short[2][EXTERNAL_BUFFER_SIZE / 4];
 			short sDum[][] = new short[2][iFIN];
 			short sSample,sTmp;
 			double dSpL,dSpR,dSpImageL,dSpImageR,dtemp;
 			double dTmp,dPhaseL,dPhaseImageL,dPhaseR,dPhaseImageR;
-
-			double dReL[] = new double[iSize + 1];
-			double dImL[] = new double[iSize + 1];
-			double dReR[] = new double[iSize + 1];
-			double dImR[] = new double[iSize + 1];
-			double dPow[] = new double[iSize + 1];
-			double dPh[] = new double[iSize + 1];
 
 			fft test = new fft();
 
@@ -405,47 +395,53 @@ public class Sapplet extends Applet implements Runnable
 			}
 			nSamplesWritten = 0;
 
+			try
+			{
+				nBytesRead = iRead = 0;
+				iTmp = abData.length;
+				while(iTmp > 0 && iRead >= 0)
+				{
+					iRead = inStream.read(abData, nBytesRead, iTmp);
+					if(iRead == -1)
+					{
+						iTmp = 0;
+					}
+					else
+					{
+						nBytesRead += iRead;
+						iTmp -= iRead;
+					}
+				}
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+				System.exit(1);
+			}
+			
+			iInt = 5;
+			sSample = 1;
+			while(sSample > 0)
+			{
+				sSample = (short)abData[iInt];
+				iInt += 4;
+			}
+			iSize = iInt - 5;
+			//					System.out.println("FFT window size = " + iSize);
+			iProc = iSize / nOverlap;
+			iRem = iSize - iProc;
+			iHlf = iSize / 2;							// half of FFT window size
+			test.iTap = iSize;							// FFT window size
+			iRatio *= iSize / 512; 
+			
+			int[]	iAngl = new int[iSize];
+			double dReL[] = new double[iSize + 1];
+			double dImL[] = new double[iSize + 1];
+			double dReR[] = new double[iSize + 1];
+			double dImR[] = new double[iSize + 1];
+
 			while(nMsg == 1)
 			{
-				try
-				{
-					nBytesRead = iRead = 0;
-					iTmp = abData.length;
-					while(iTmp > 0 && iRead >= 0)
-					{
-						iRead = inStream.read(abData, nBytesRead, iTmp);
-						if(iRead == -1)
-						{
-							iTmp = 0;
-						}
-						else
-						{
-							nBytesRead += iRead;
-							iTmp -= iRead;
-						}
-					}
-				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
-				}
-				if(nBytesWritten == 0)
-				{
-					iInt = 5;
-					sSample = 1;
-					while(sSample > 0)
-					{
-						sSample = (short)abData[iInt];
-						iInt += 4;
-					}
-					iSize = iInt - 5;
-					//					System.out.println("FFT window size = " + iSize);
-					iProc = iSize / nOverlap;
-					iRem = iSize - iProc;
-					iHlf = iSize / 2;							// half of FFT window size
-					test.iTap = iSize;							// FFT window size
-					iRatio *= iSize / 512; 
-				}
 				iSect = nBytesRead / iBYTE / nChannels;			// samples per section
 				if(nBytesWritten > 0)
 					iSect += iRem;
@@ -453,7 +449,6 @@ public class Sapplet extends Applet implements Runnable
 				if(nBytesRead == EXTERNAL_BUFFER_SIZE)
 					iFnum -= nOverlap - 1;
 
-				dPow[iSize] = dPh[iSize] = 0;
 				if(nBytesRead > 0)							// We have data to process
 				{
 					rearrangeSOPA(abData,sVal,false);
@@ -477,7 +472,7 @@ public class Sapplet extends Applet implements Runnable
 									dReR[nNum] = (double)sVal[1][iCount + nNum - iRem];		// signal in the right channel
 							}
 						}
-						if(test.fastFt(dReR,dImR,dPow,dPh,false))									// FFT
+						if(test.fastFt(dReR,dImR,false))									// FFT
 						{
 							iAngl[iHlf] = 0;
 							for(nNum = 0;nNum < iHlf;nNum ++)
@@ -512,14 +507,10 @@ public class Sapplet extends Applet implements Runnable
 								}
 								if(iAngl[nNum] <= 0)
 								{
-									dSpR = dPow[nNum];
-									dSpL = dPow[nNum];
-									dSpImageL = dPow[iSize - nNum];
-									dSpImageR = dPow[iSize - nNum];
-									dPhaseL = dPh[nNum];
-									dPhaseR = dPh[nNum];
-									dPhaseImageL = dPh[iSize - nNum];
-									dPhaseImageR = dPh[iSize - nNum];
+									dSpR = dSpL = dReR[nNum];
+									dSpImageL = dSpImageR = dReR[iSize - nNum];
+									dPhaseL = dPhaseR = dImR[nNum];
+									dPhaseImageL = dPhaseImageR = dImR[iSize - nNum];
 								}
 								else
 								{
@@ -546,13 +537,13 @@ public class Sapplet extends Applet implements Runnable
 										iNumb += 36864;
 
 									dTmp = (double)sHrtf[iNumb];
-									dSpL = dPow[nNum] * dTmp / 2048;
+									dSpL = dReR[nNum] * dTmp / 2048;
 									dTmp = (double)sPhase[iNumb];
-									dPhaseL = dPh[nNum] + dTmp / 10000.0;
+									dPhaseL = dImR[nNum] + dTmp / 10000.0;
 									dTmp = (double)sHrtf[iNumImage];
-									dSpImageL = dPow[iSize - nNum] * dTmp / 2048;
+									dSpImageL = dReR[iSize - nNum] * dTmp / 2048;
 									dTmp = (double)sPhase[iNumImage];
-									dPhaseImageL = dPh[iSize - nNum] + dTmp / 10000.0;
+									dPhaseImageL = dImR[iSize - nNum] + dTmp / 10000.0;
 
 									iNumb = 512 * iAngl[nNum] + iFreq;
 									iNumImage = 512 * iAngl[nNum] + iSize - iFreq;
@@ -566,13 +557,13 @@ public class Sapplet extends Applet implements Runnable
 										iNumb += 36864;
 
 									dTmp = (double)sHrtf[iNumb];
-									dSpR = dPow[nNum] * dTmp / 2048;
+									dSpR = dReR[nNum] * dTmp / 2048;
 									dTmp = (double)sPhase[iNumb];
-									dPhaseR = dPh[nNum] + dTmp / 10000.0;
+									dPhaseR = dImR[nNum] + dTmp / 10000.0;
 									dTmp = (double)sHrtf[iNumImage];
-									dSpImageR = dPow[iSize - nNum] * dTmp / 2048;
+									dSpImageR = dReR[iSize - nNum] * dTmp / 2048;
 									dTmp = (double)sPhase[iNumImage];
-									dPhaseImageR = dPh[iSize - nNum] + dTmp / 10000.0;
+									dPhaseImageR = dImR[iSize - nNum] + dTmp / 10000.0;
 								}
 								dReL[nNum] = dSpL * Math.cos(dPhaseL);
 								dReR[nNum] = dSpR * Math.cos(dPhaseR);
@@ -589,9 +580,9 @@ public class Sapplet extends Applet implements Runnable
 							}
 							dReL[iHlf] = dReR[iHlf];
 							dImL[iHlf] = dImR[iHlf];
-							if(test.fastFt(dReL,dImL,dPow,dPh,true))										// reverse FFT (left channel)
+							if(test.fastFt(dReL,dImL,true))										// reverse FFT (left channel)
 							{
-								if(test.fastFt(dReR,dImR,dPow,dPh,true))									// reverse FFT (right channel)
+								if(test.fastFt(dReR,dImR,true))									// reverse FFT (right channel)
 								{
 									for(nNum = 0;nNum < iSize;nNum ++)
 									{
@@ -656,7 +647,30 @@ public class Sapplet extends Applet implements Runnable
 				if(iRead < 0)
 				{
 					nMsg = -2;
-					repaint();
+//					repaint();
+				}
+				try
+				{
+					nBytesRead = iRead = 0;
+					iTmp = abData.length;
+					while(iTmp > 0 && iRead >= 0)
+					{
+						iRead = inStream.read(abData, nBytesRead, iTmp);
+						if(iRead == -1)
+						{
+							iTmp = 0;
+						}
+						else
+						{
+							nBytesRead += iRead;
+							iTmp -= iRead;
+						}
+					}
+				}
+				catch (IOException e)
+				{
+					e.printStackTrace();
+					System.exit(1);
 				}
 			}
 			//			System.out.println(nSamplesWritten + " samples were played.\n");
