@@ -505,7 +505,7 @@ public class Sapplet extends Applet implements Runnable
 									else
 										iAngl[nNum] = sTmp % 256;
 								}
-								if(iAngl[nNum] <= 0)
+								if(iAngl[nNum] <= 0 || iFnum == 0)
 								{
 									dSpR = dSpL = dReR[nNum];
 									dSpImageL = dSpImageR = dReR[iSize - nNum];
@@ -525,8 +525,8 @@ public class Sapplet extends Applet implements Runnable
 									{
 										iAngl[nNum] += 72;
 									}
-									iNumb = 512 * (71 - iAngl[nNum]) + iFreq;
-									iNumImage = 512 * (71 - iAngl[nNum]) + iSize - iFreq;
+									iNumb = 512 * (72 - iAngl[nNum]) + iFreq;
+									iNumImage = 512 * (72 - iAngl[nNum]) + 512 - iFreq;
 									if(iNumImage >= 36864)
 										iNumImage -= 36864;
 									else if(iNumImage < 0)
@@ -546,7 +546,7 @@ public class Sapplet extends Applet implements Runnable
 									dPhaseImageL = dImR[iSize - nNum] + dTmp / 10000.0;
 
 									iNumb = 512 * iAngl[nNum] + iFreq;
-									iNumImage = 512 * iAngl[nNum] + iSize - iFreq;
+									iNumImage = 512 * iAngl[nNum] + 512 - iFreq;
 									if(iNumImage >= 36864)
 										iNumImage -= 36864;
 									else if(iNumImage < 0)
