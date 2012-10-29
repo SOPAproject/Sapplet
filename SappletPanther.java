@@ -161,7 +161,7 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 		{
 			g.drawString("Playing " + strFilename, 120,40);
 			g.drawString("If you want to stop, just CLICK here.", 200,80);
-			g.drawString("Scroll image to control panning.", 300,320);
+			g.drawString("Scroll image to control panning.", 256,320);
 		}
 		else if(nMsg == -2)
 		{
@@ -191,7 +191,7 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 		}
 		g.drawString("< --", 40,320);
 		g.drawString("-- >", 720,320);
-		g.drawString("Please use stereo headphones.", 120,360);
+		g.drawString("Please use stereo headphones.", 240,360);
 	}
 
 	public void run()
