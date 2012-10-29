@@ -1,5 +1,26 @@
 /*
  *	SappletPanther.java
+ 
+ Copyright (c) 2012, AIST
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy of
+ this software and associated documentation files (the "Software"), to deal in
+ the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ 
  *
  */
 
@@ -12,6 +33,7 @@ import java.net.URL;
 import java.applet.Applet;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.Cursor;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -34,63 +56,95 @@ class largeImage
 	static short frmWidth = 800;
 }
 
-public class SappletPanther extends Applet implements Runnable 
+public class SappletPanther extends Applet implements Runnable,MouseMotionListener
 {
 	Thread thread = null;
 	private static final int	EXTERNAL_BUFFER_SIZE = 32768;
 	String strFilename;
 	int	x = -1,y,nMsg = 0;
+	int iniX = 0;
 	int nRot = 0;
+	int nXunit;
 	int nSampleRate = 44100;
+	boolean isMouseChanged = false;
+	Color myColor = new Color(220,255,240);
 	largeImage img;
 
 	public void init()
 	{
 		strFilename = "panther22k.sopa";
+		largeImage.img = getImage(getDocumentBase(),"inst_panther.gif");
 
 		thread = new Thread(this);
 		thread.start();
-		largeImage.img = getImage(getDocumentBase(),"inst_panther.gif");
+		
+		setBackground(myColor);
+
+		addMouseMotionListener(this);
+
 		addMouseListener(new MouseAdapter()
 		{
+			public void mousePressed(MouseEvent me)
+			{
+				y = me.getY();
+				if(y >= 120 && y < 280)
+				{
+					setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+					isMouseChanged = true;
+					iniX = me.getX();
+				}
+			}
+			public void mouseReleased(MouseEvent me)
+			{
+				if(isMouseChanged)
+					setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			}
 			public void mouseClicked(MouseEvent me)
 			{
-				x = me.getX();
-				y = me.getY();
 				if(nMsg == 2 || nMsg == -2)
 				{
 					nMsg = -1;
-					repaint();
 				}
 				else if(nMsg != -1)
 				{
-					if(x >= largeImage.frmWidth * 3 / 4)
-					{
-						largeImage.sXpos -= largeImage.width / 36;
-						nRot -= 2;
-						if(nRot <= -36)
-							nRot += 72;
-						repaint();
-					}
-					else if(x < largeImage.frmWidth / 4)
-					{
-						largeImage.sXpos += largeImage.width / 36;
-						nRot += 2;
-						if(nRot > 36)
-							nRot -= 72;
-						repaint();
-					}
-					else
 						nMsg ++;
 				}
+				repaint();
 			}
 		});
+	}
+
+	public void mouseDragged(MouseEvent me) 
+	{
+		x = me.getX();
+		y = me.getY();
+
+		if(y >= 120 && y < 280)
+		{
+			img.sXpos += x - iniX;
+
+			int nCurrentRot = img.sXpos / nXunit;
+
+			iniX = x;
+			if(nCurrentRot != nRot)
+			{
+				repaint();
+				nRot = nCurrentRot;
+			}
+		}
+	}
+
+	public void mouseMoved(MouseEvent e)
+	{
 	}
 
 	public void paint(Graphics g)
 	{	
 		largeImage.width = (short)largeImage.img.getWidth(this);
+		nXunit = largeImage.width / 72;
 		g.drawImage(largeImage.img,largeImage.sXpos,120,this);
+		g.setFont(new Font(null,Font.PLAIN,16));
+
 		if(largeImage.sXpos + largeImage.width < largeImage.frmWidth)
 		{
 			largeImage.sXpos += largeImage.width;
@@ -101,38 +155,42 @@ public class SappletPanther extends Applet implements Runnable
 			largeImage.sXpos -= largeImage.width;
 			g.drawImage(largeImage.img,largeImage.sXpos,120,this);
 		}
-		g.drawImage(largeImage.img,largeImage.sXpos,120,this);
+//		g.drawImage(largeImage.img,largeImage.sXpos,120,this);
 
 		if(nMsg == 1)
 		{
 			g.drawString("Playing " + strFilename, 120,40);
-			g.drawString("If you want to stop, click here.", 200,80);
+			g.drawString("If you want to stop, just CLICK here.", 200,80);
+			g.drawString("Scroll image to control panning.", 300,320);
 		}
 		else if(nMsg == -2)
 		{
 			g.drawString(strFilename + " was played.", 120,40);
 			g.drawString("Thank you.", 120,80);
+			g.drawString("Copyright(C);2012 AIST", 480,380);
 			g.drawImage(largeImage.img,largeImage.sXpos,120,this);
 		}
 		else if(nMsg == 2)
 		{
 			g.drawString("Sound stopped by user.", 120,40);
+			g.drawString("Copyright(C);2012 AIST", 480,380);
 		}
 		else if(nMsg == 0)
 		{
-			g.drawString("Click here to start.", 240,40);
+			g.drawString("Just CLICK to start.", 200,40);
 		}
 		else if(nMsg == -3)
 		{
-			g.drawString("Reading file error!.", 120,40);
+			g.drawString("Error! File not found!.", 120,40);
 		}
 		else
 		{
 			g.drawString("If you want to replay this demonstration,", 120,40);
-			g.drawString("please refresh this page.", 120,60);
+			g.drawString("please refresh this page.", 120,80);
+			g.drawString("Copyright(C);2012 AIST", 480,380);
 		}
-		g.drawString("< -- Pan to the left", 20,320);
-		g.drawString("Pan to the Right -- >", 650,320);
+		g.drawString("< --", 40,320);
+		g.drawString("-- >", 720,320);
 		g.drawString("Please use stereo headphones.", 120,360);
 	}
 
@@ -150,7 +208,7 @@ public class SappletPanther extends Applet implements Runnable
 		int nTerm2[] = {102,109,116};				// fmt
 		short[] sHrtf = new short[36864];
 		short[] sPhase = new short[36864];
-//		int iAv;
+	
 		InputStream inStream = null;
 		AudioFormat audioFormat = null;	
 		DataInputStream din = null;
@@ -163,13 +221,12 @@ public class SappletPanther extends Applet implements Runnable
 			}
 			catch(InterruptedException e){}
 		}
-		repaint();
+//		repaint();
 
 		
-		// Prepair HRTF (level) database
+		// Prepare HRTF (level) database
 		try
 		{
-//			din = new DataInputStream(new FileInputStream("hrtf512.bin"));
 			InputStream hrtfStr = new URL(getDocumentBase(),"hrtf512.bin").openStream();
 			din = new DataInputStream(hrtfStr);
 			for(nNum = 0;nNum < 36864;nNum ++) 
@@ -184,10 +241,9 @@ public class SappletPanther extends Applet implements Runnable
 			nMsg = -8;
 		}
 
-		// Prepair HRTF (phase) database
+		// Prepare HRTF (phase) database
 		try
 		{
-//			din = new DataInputStream(new FileInputStream("phase512.bin"));
 			InputStream hrtfStr = new URL(getDocumentBase(),"phase512.bin").openStream();
 			din = new DataInputStream(hrtfStr);
 			for(nNum = 0;nNum < 36864;nNum ++) 
@@ -203,7 +259,7 @@ public class SappletPanther extends Applet implements Runnable
 		}
 //		System.out.println("HRTF data number " + nNum);
 
-// Open SOPA (Spatial Audio File)
+		// Open SOPA (Spatial Audio File)
 		URL url = null;
 		if(nMsg != -8)
 		{
@@ -223,11 +279,11 @@ public class SappletPanther extends Applet implements Runnable
 					}
 					if(!Arrays.equals(nByte,nTerm0))
 					{
-//						System.out.println("File format error!");
+						//						System.out.println("File format error!");
 						inStream.close();
 						System.exit(1);
 					}
-//					System.out.println("RIFF OK");
+					//					System.out.println("RIFF OK");
 					for(nCnt = 0;nCnt < 4;nCnt ++)
 					{
 						nByte[nCnt] = inStream.read();
@@ -248,11 +304,11 @@ public class SappletPanther extends Applet implements Runnable
 					}
 					if(!Arrays.equals(nByte,nTerm1))
 					{
-//						System.out.println("File format error!");
+						//						System.out.println("File format error!");
 						inStream.close();
 						System.exit(1);
 					}
-//					System.out.println("SOPA OK");
+					//					System.out.println("SOPA OK");
 					for(nCnt = 0;nCnt < 3;nCnt ++)
 					{
 						nFmt[nCnt] = inStream.read();
@@ -264,17 +320,17 @@ public class SappletPanther extends Applet implements Runnable
 					}
 					if(!Arrays.equals(nFmt,nTerm2))
 					{
-//						System.out.println("File format error!");
+						//						System.out.println("File format error!");
 						inStream.close();
 						System.exit(1);
 					}
-//					System.out.println("fmt OK");
+					//					System.out.println("fmt OK");
 					inStream.read();				
 			
 					nBit = inStream.read();
 					if(nBit != 16)
 					{
-//						System.out.println("Data are not 16-bit!");
+						//						System.out.println("Data are not 16-bit!");
 						inStream.close();
 						System.exit(1);
 					}
@@ -282,7 +338,7 @@ public class SappletPanther extends Applet implements Runnable
 						inStream.read();
 					if(inStream.read() != 1)
 					{
-//						System.out.println("Data are not PCM!");
+						//						System.out.println("Data are not PCM!");
 						inStream.close();
 						System.exit(1);
 					}
@@ -290,7 +346,7 @@ public class SappletPanther extends Applet implements Runnable
 					nOverlap = inStream.read();
 					if(nOverlap != 2 && nOverlap != 4)
 					{
-//						System.out.println("Wrong value (nOverlap)!");
+						//						System.out.println("Wrong value!");
 						inStream.close();
 						System.exit(1);
 					}
@@ -310,9 +366,9 @@ public class SappletPanther extends Applet implements Runnable
 							System.exit(1);
 						}
 					}
-//					System.out.println("SOPA file version = " + nByte[3] + "." + nByte[2] + "." + nByte[1] + "." + nByte[0]);
+					//					System.out.println("SOPA file version = " + nByte[3] + "." + nByte[2] + "." + nByte[1] + "." + nByte[0]);
 				}
-				catch (Exception e)
+				catch(Exception e)
 				{
 					e.printStackTrace();
 					nMsg = -3;
@@ -326,8 +382,7 @@ public class SappletPanther extends Applet implements Runnable
 				nChannels * nBit / 8,nSampleRate,false);
 
 			SourceDataLine	line = null;
-			DataLine.Info	info = new DataLine.Info(SourceDataLine.class,
-				audioFormat);
+			DataLine.Info	info = new DataLine.Info(SourceDataLine.class,audioFormat);
 
 			try
 			{
@@ -336,11 +391,6 @@ public class SappletPanther extends Applet implements Runnable
 				line.open(audioFormat);
 			}
 			catch (LineUnavailableException e)
-			{
-				e.printStackTrace();
-				nMsg = -2;
-			}
-			catch (Exception e)
 			{
 				e.printStackTrace();
 				nMsg = -2;
@@ -363,20 +413,12 @@ public class SappletPanther extends Applet implements Runnable
 			int nBytesWritten = 0;
 			byte[]	abData = new byte[EXTERNAL_BUFFER_SIZE];
 			byte[] bRet = new byte[2];
-			int[]	iAngl = new int[iSize];
 			short[][] sData = new short[2][EXTERNAL_BUFFER_SIZE / 2];
 			short[][] sVal = new short[2][EXTERNAL_BUFFER_SIZE / 4];
 			short sDum[][] = new short[2][iFIN];
 			short sSample,sTmp;
 			double dSpL,dSpR,dSpImageL,dSpImageR,dtemp;
 			double dTmp,dPhaseL,dPhaseImageL,dPhaseR,dPhaseImageR;
-
-			double dReL[] = new double[iSize + 1];
-			double dImL[] = new double[iSize + 1];
-			double dReR[] = new double[iSize + 1];
-			double dImR[] = new double[iSize + 1];
-			double dPow[] = new double[iSize + 1];
-			double dPh[] = new double[iSize + 1];
 
 			fft test = new fft();
 
@@ -392,49 +434,53 @@ public class SappletPanther extends Applet implements Runnable
 			}
 			nSamplesWritten = 0;
 
-			//			iAv = line.available();
-			//			System.out.println("Available buffer size = " + iAv);
+			try
+			{
+				nBytesRead = iRead = 0;
+				iTmp = abData.length;
+				while(iTmp > 0 && iRead >= 0)
+				{
+					iRead = inStream.read(abData, nBytesRead, iTmp);
+					if(iRead == -1)
+					{
+						iTmp = 0;
+					}
+					else
+					{
+						nBytesRead += iRead;
+						iTmp -= iRead;
+					}
+				}
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+				System.exit(1);
+			}
+			
+			iInt = 5;
+			sSample = 1;
+			while(sSample > 0)
+			{
+				sSample = (short)abData[iInt];
+				iInt += 4;
+			}
+			iSize = iInt - 5;
+			//					System.out.println("FFT window size = " + iSize);
+			iProc = iSize / nOverlap;
+			iRem = iSize - iProc;
+			iHlf = iSize / 2;							// half of FFT window size
+			test.iTap = iSize;							// FFT window size
+			iRatio *= iSize / 512; 
+			
+			int[]	iAngl = new int[iSize];
+			double dReL[] = new double[iSize + 1];
+			double dImL[] = new double[iSize + 1];
+			double dReR[] = new double[iSize + 1];
+			double dImR[] = new double[iSize + 1];
+
 			while(nMsg == 1)
 			{
-				try
-				{
-					nBytesRead = iRead = 0;
-					iTmp = abData.length;
-					while(iTmp > 0 && iRead >= 0)
-					{
-						iRead = inStream.read(abData, nBytesRead, iTmp);
-						if(iRead == -1)
-						{
-							iTmp = 0;
-						}
-						else
-						{
-							nBytesRead += iRead;
-							iTmp -= iRead;
-						}
-					}
-				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
-				}
-				if(nBytesWritten == 0)
-				{
-					iInt = 5;
-					sSample = 1;
-					while(sSample > 0)
-					{
-						sSample = (short)abData[iInt];
-						iInt += 4;
-					}
-					iSize = iInt - 5;
-//					System.out.println("FFT window size = " + iSize);
-					iProc = iSize / nOverlap;
-					iRem = iSize - iProc;
-					iHlf = iSize / 2;							// half of FFT window size
-					test.iTap = iSize;							// FFT window size
-					iRatio *= iSize / 512;
-				}
 				iSect = nBytesRead / iBYTE / nChannels;			// samples per section
 				if(nBytesWritten > 0)
 					iSect += iRem;
@@ -442,10 +488,9 @@ public class SappletPanther extends Applet implements Runnable
 				if(nBytesRead == EXTERNAL_BUFFER_SIZE)
 					iFnum -= nOverlap - 1;
 
-				dPow[iSize] = dPh[iSize] = 0;
 				if(nBytesRead > 0)							// We have data to process
 				{
-					rearrangeSAF(abData,sVal,false);
+					rearrangeSOPA(abData,sVal,false);
 					for(iInt = 0;iInt < iFnum;iInt ++)
 					{
 						iCount = iProc * iInt;
@@ -466,7 +511,7 @@ public class SappletPanther extends Applet implements Runnable
 									dReR[nNum] = (double)sVal[1][iCount + nNum - iRem];		// signal in the right channel
 							}
 						}
-						if(test.fastFt(dReR,dImR,dPow,dPh,false))									// FFT
+						if(test.fastFt(dReR,dImR,false))									// FFT
 						{
 							iAngl[iHlf] = 0;
 							for(nNum = 0;nNum < iHlf;nNum ++)
@@ -499,16 +544,12 @@ public class SappletPanther extends Applet implements Runnable
 									else
 										iAngl[nNum] = sTmp % 256;
 								}
-								if(iAngl[nNum] <= 0)
+								if(iAngl[nNum] <= 0 || iFreq == 0)
 								{
-									dSpR = dPow[nNum];
-									dSpL = dPow[nNum];
-									dSpImageL = dPow[iSize - nNum];
-									dSpImageR = dPow[iSize - nNum];
-									dPhaseL = dPh[nNum];
-									dPhaseR = dPh[nNum];
-									dPhaseImageL = dPh[iSize - nNum];
-									dPhaseImageR = dPh[iSize - nNum];
+									dSpR = dSpL = dReR[nNum];
+									dSpImageL = dSpImageR = dReR[iSize - nNum];
+									dPhaseL = dPhaseR = dImR[nNum];
+									dPhaseImageL = dPhaseImageR = dImR[iSize - nNum];
 								}
 								else
 								{
@@ -523,8 +564,8 @@ public class SappletPanther extends Applet implements Runnable
 									{
 										iAngl[nNum] += 72;
 									}
-									iNumb = 512 * (71 - iAngl[nNum]) + iFreq;
-									iNumImage = 512 * (71 - iAngl[nNum]) + iSize - iFreq;
+									iNumb = 512 * (72 - iAngl[nNum]) + iFreq;
+									iNumImage = 512 * (72 - iAngl[nNum]) + 512 - iFreq;
 									if(iNumImage >= 36864)
 										iNumImage -= 36864;
 									else if(iNumImage < 0)
@@ -535,16 +576,16 @@ public class SappletPanther extends Applet implements Runnable
 										iNumb += 36864;
 
 									dTmp = (double)sHrtf[iNumb];
-									dSpL = dPow[nNum] * dTmp / 2048;
+									dSpL = dReR[nNum] * dTmp / 2048;
 									dTmp = (double)sPhase[iNumb];
-									dPhaseL = dPh[nNum] + dTmp / 10000.0;
+									dPhaseL = dImR[nNum] + dTmp / 10000.0;
 									dTmp = (double)sHrtf[iNumImage];
-									dSpImageL = dPow[iSize - nNum] * dTmp / 2048;
+									dSpImageL = dReR[iSize - nNum] * dTmp / 2048;
 									dTmp = (double)sPhase[iNumImage];
-									dPhaseImageL = dPh[iSize - nNum] + dTmp / 10000.0;
+									dPhaseImageL = dImR[iSize - nNum] + dTmp / 10000.0;
 
 									iNumb = 512 * iAngl[nNum] + iFreq;
-									iNumImage = 512 * iAngl[nNum] + iSize - iFreq;
+									iNumImage = 512 * iAngl[nNum] + 512 - iFreq;
 									if(iNumImage >= 36864)
 										iNumImage -= 36864;
 									else if(iNumImage < 0)
@@ -555,13 +596,13 @@ public class SappletPanther extends Applet implements Runnable
 										iNumb += 36864;
 
 									dTmp = (double)sHrtf[iNumb];
-									dSpR = dPow[nNum] * dTmp / 2048;
+									dSpR = dReR[nNum] * dTmp / 2048;
 									dTmp = (double)sPhase[iNumb];
-									dPhaseR = dPh[nNum] + dTmp / 10000.0;
+									dPhaseR = dImR[nNum] + dTmp / 10000.0;
 									dTmp = (double)sHrtf[iNumImage];
-									dSpImageR = dPow[iSize - nNum] * dTmp / 2048;
+									dSpImageR = dReR[iSize - nNum] * dTmp / 2048;
 									dTmp = (double)sPhase[iNumImage];
-									dPhaseImageR = dPh[iSize - nNum] + dTmp / 10000.0;
+									dPhaseImageR = dImR[iSize - nNum] + dTmp / 10000.0;
 								}
 								dReL[nNum] = dSpL * Math.cos(dPhaseL);
 								dReR[nNum] = dSpR * Math.cos(dPhaseR);
@@ -578,9 +619,9 @@ public class SappletPanther extends Applet implements Runnable
 							}
 							dReL[iHlf] = dReR[iHlf];
 							dImL[iHlf] = dImR[iHlf];
-							if(test.fastFt(dReL,dImL,dPow,dPh,true))										// reverse FFT (left channel)
+							if(test.fastFt(dReL,dImL,true))										// reverse FFT (left channel)
 							{
-								if(test.fastFt(dReR,dImR,dPow,dPh,true))									// reverse FFT (right channel)
+								if(test.fastFt(dReR,dImR,true))									// reverse FFT (right channel)
 								{
 									for(nNum = 0;nNum < iSize;nNum ++)
 									{
@@ -589,6 +630,7 @@ public class SappletPanther extends Applet implements Runnable
 										dReR[nNum] *= dtemp;	
 										sData[0][iCount + nNum] += dReL[nNum];
 										sData[1][iCount + nNum] += dReR[nNum];
+										dImR[nNum] = 0;
 									}
 								}
 								//								else
@@ -634,9 +676,6 @@ public class SappletPanther extends Applet implements Runnable
 							sData[0][iInt] = sData[1][iInt] = 0;
 						}
 					}
-					/*					iAv = line.available();
-					 while(iAv < EXTERNAL_BUFFER_SIZE)
-					 iAv = line.available();	*/
 					if(nBytesRead < EXTERNAL_BUFFER_SIZE)
 						nBytesWritten += line.write(abData, 0, nBytesRead + iRem * 4);
 					else if(nBytesWritten != 0)
@@ -648,10 +687,33 @@ public class SappletPanther extends Applet implements Runnable
 				if(iRead < 0)
 				{
 					nMsg = -2;
-					repaint();
+//					repaint();
+				}
+				try
+				{
+					nBytesRead = iRead = 0;
+					iTmp = abData.length;
+					while(iTmp > 0 && iRead >= 0)
+					{
+						iRead = inStream.read(abData, nBytesRead, iTmp);
+						if(iRead == -1)
+						{
+							iTmp = 0;
+						}
+						else
+						{
+							nBytesRead += iRead;
+							iTmp -= iRead;
+						}
+					}
+				}
+				catch (IOException e)
+				{
+					e.printStackTrace();
+					System.exit(1);
 				}
 			}
-//			System.out.println(nSamplesWritten + " samples were played.\n");
+			//			System.out.println(nSamplesWritten + " samples were played.\n");
 
 			line.drain();
 			line.close();
@@ -670,7 +732,7 @@ public class SappletPanther extends Applet implements Runnable
 		repaint();
 	}
 
-	private static void rearrangeSAF(byte bDt[], short sDt[][],boolean littleOrBig)
+	private static void rearrangeSOPA(byte bDt[], short sDt[][],boolean littleOrBig)
 	{
 		int nNum;
 		int iTmp,iLow;
@@ -705,11 +767,6 @@ public class SappletPanther extends Applet implements Runnable
 
 		bRet[0] = (byte)(iDt & 0x00FF);
 		bRet[1] = (byte)(iDt >>> 8 & 0x00ff);
-	}
-
-	private static void out(String strMessage)
-	{
-		System.out.println(strMessage);
 	}
 }
 
