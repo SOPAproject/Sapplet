@@ -43,7 +43,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
 /*
- * <APPLET CODE="SappletPanther.class" WIDTH=800 HEIGHT=400>
+ * <APPLET CODE="SappletPanther.class" WIDTH=720 HEIGHT=400>
  * </APPLET>
  */
 
@@ -53,7 +53,8 @@ class largeImage
 	static Image img;
 	static short sXpos = 0;
 	static short width;
-	static short frmWidth = 800;
+	static short frmWidth = 720;
+	static short frmHeight = 400;
 }
 
 public class SappletPanther extends Applet implements Runnable,MouseMotionListener
@@ -62,21 +63,28 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 	private static final int	EXTERNAL_BUFFER_SIZE = 32768;
 	String strFilename;
 	int	x = -1,y,nMsg = 0;
+	int threadCount = 0;
 	int iniX = 0;
 	int nRot = 0;
-	int nXunit;
+	int nXunit,nMargin,nBottom;
 	int nSampleRate = 44100;
 	boolean isMouseChanged = false;
-	Color myColor = new Color(220,255,240);
-	largeImage img;
+	Color myColor = new Color(240,255,220);
+	largeImage panImage;
 
 	public void init()
 	{
 		strFilename = "panther22k.sopa";
-		largeImage.img = getImage(getDocumentBase(),"inst_panther.gif");
+		panImage.img = getImage(getDocumentBase(),"panther22k.gif");
+		nMargin = (panImage.frmHeight - 160) / 2;
+		nBottom = panImage.frmHeight - nMargin;
 
-		thread = new Thread(this);
-		thread.start();
+		if(threadCount == 0)
+		{
+			thread = new Thread(this);
+			thread.start();
+			threadCount ++;
+		}
 		
 		setBackground(myColor);
 
@@ -87,7 +95,7 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 			public void mousePressed(MouseEvent me)
 			{
 				y = me.getY();
-				if(y >= 120 && y < 280)
+				if(y >= nMargin && y < nBottom)
 				{
 					setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 					isMouseChanged = true;
@@ -103,11 +111,11 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 			{
 				if(nMsg == 2 || nMsg == -2)
 				{
-					nMsg = -1;
+					nMsg = 0;
 				}
 				else if(nMsg != -1)
 				{
-						nMsg ++;
+					nMsg ++;
 				}
 				repaint();
 			}
@@ -116,20 +124,25 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 
 	public void mouseDragged(MouseEvent me) 
 	{
+		int nDif;
 		x = me.getX();
 		y = me.getY();
 
-		if(y >= 120 && y < 280)
+		if(y >= nMargin && y < nBottom)
 		{
-			img.sXpos += x - iniX;
-
-			int nCurrentRot = img.sXpos / nXunit;
-
-			iniX = x;
-			if(nCurrentRot != nRot)
+			nDif = x - iniX;
+			if(nDif != 0)
 			{
+				panImage.sXpos += nDif;
+
+				int nCurrentRot = panImage.sXpos / nXunit;
+
+				iniX = x;
+				if(nCurrentRot != nRot)
+				{
+					nRot = nCurrentRot;
+				}
 				repaint();
-				nRot = nCurrentRot;
 			}
 		}
 	}
@@ -140,44 +153,50 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 
 	public void paint(Graphics g)
 	{	
-		largeImage.width = (short)largeImage.img.getWidth(this);
-		nXunit = largeImage.width / 72;
-		g.drawImage(largeImage.img,largeImage.sXpos,120,this);
+		panImage.width = (short)panImage.img.getWidth(this);
+		nXunit = panImage.width / 72;
+		g.drawImage(panImage.img,panImage.sXpos,nMargin,this);
 		g.setFont(new Font(null,Font.PLAIN,16));
 
-		if(largeImage.sXpos + largeImage.width < largeImage.frmWidth)
+		if(panImage.sXpos + panImage.width < panImage.frmWidth)
 		{
-			largeImage.sXpos += largeImage.width;
-			g.drawImage(largeImage.img,largeImage.sXpos,120,this);
+			panImage.sXpos += panImage.width;
+			g.drawImage(panImage.img,panImage.sXpos,nMargin,this);
 		}
-		if(largeImage.sXpos > 0)
+		if(panImage.sXpos > 0)
 		{
-			largeImage.sXpos -= largeImage.width;
-			g.drawImage(largeImage.img,largeImage.sXpos,120,this);
+			panImage.sXpos -= panImage.width;
+			g.drawImage(panImage.img,panImage.sXpos,nMargin,this);
 		}
-//		g.drawImage(largeImage.img,largeImage.sXpos,120,this);
+//		g.drawImage(panImage.img,panImage.sXpos,nMargin,this);
 
 		if(nMsg == 1)
 		{
 			g.drawString("Playing " + strFilename, 120,40);
 			g.drawString("If you want to stop, just CLICK here.", 200,80);
-			g.drawString("Scroll image to control panning.", 256,320);
+			g.drawString("Scroll image to control panning.", 250,320);
 		}
 		else if(nMsg == -2)
 		{
 			g.drawString(strFilename + " was played.", 120,40);
 			g.drawString("Thank you.", 120,80);
-			g.drawString("Copyright(C);2012 AIST", 480,380);
-			g.drawImage(largeImage.img,largeImage.sXpos,120,this);
+			g.drawString("Copyright(C);2012 AIST", 520,380);
+			g.drawImage(panImage.img,panImage.sXpos,nMargin,this);
 		}
 		else if(nMsg == 2)
 		{
 			g.drawString("Sound stopped by user.", 120,40);
-			g.drawString("Copyright(C);2012 AIST", 480,380);
+			g.drawString("Copyright(C);2012 AIST", 520,380);
 		}
 		else if(nMsg == 0)
 		{
 			g.drawString("Just CLICK to start.", 200,40);
+			if(threadCount == 0)
+			{
+				thread = new Thread(this);
+				thread.start();
+				threadCount ++;
+			}
 		}
 		else if(nMsg == -3)
 		{
@@ -185,13 +204,13 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 		}
 		else
 		{
-			g.drawString("If you want to replay this demonstration,", 120,40);
-			g.drawString("please refresh this page.", 120,80);
-			g.drawString("Copyright(C);2012 AIST", 480,380);
+			g.drawString("Reload page to replay this demonstration,", 120,40);
+			g.drawString("Copyright(C);2012 AIST", 520,380);
 		}
+		g.drawString("Please use stereo headphones.", 248,360);
+		g.setFont(new Font(null,Font.PLAIN,24));
 		g.drawString("< --", 40,320);
-		g.drawString("-- >", 720,320);
-		g.drawString("Please use stereo headphones.", 240,360);
+		g.drawString("-- >", 640,320);
 	}
 
 	public void run()
@@ -460,7 +479,7 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 			
 			iInt = 5;
 			sSample = 1;
-			while(sSample > 0)
+			while(sSample != 0)
 			{
 				sSample = (short)abData[iInt];
 				iInt += 4;
@@ -532,19 +551,13 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 								}	
 								if(nNum % 2 == 0)
 								{
-									if(sTmp < 0)
-										iAngl[nNum] = -sTmp / 256;
-									else
-										iAngl[nNum] = sTmp / 256;
+									iAngl[nNum] = (sTmp >> 8) & 0x000000ff;
 								}
 								else
 								{
-									if(sTmp < 0)
-										iAngl[nNum] = (-sTmp) % 256;
-									else
-										iAngl[nNum] = sTmp % 256;
+									iAngl[nNum] = sTmp & 0x000000FF;
 								}
-								if(iAngl[nNum] <= 0 || iFreq == 0)
+								if(iAngl[nNum] == 0 || iFreq == 0 || iAngl[nNum] == 255)
 								{
 									dSpR = dSpL = dReR[nNum];
 									dSpImageL = dSpImageR = dReR[iSize - nNum];
@@ -727,8 +740,10 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 				System.exit(1);
 			}
 
-			largeImage.sXpos = 0;
+			panImage.sXpos = 0;
+			nRot = 0;
 		}
+		threadCount --;
 		repaint();
 	}
 
@@ -742,13 +757,13 @@ public class SappletPanther extends Applet implements Runnable,MouseMotionListen
 		{
 			if(!littleOrBig)
 			{
-				iTmp = bDt[nNum + 1] << 8;
-				iLow = bDt[nNum];
-				iV = iTmp + (iLow & 0x000000FF);
+				iTmp = (bDt[nNum + 1] & 0x000000FF) << 8;
+				iLow = (bDt[nNum] & 0x000000FF);
+				iV = iTmp + iLow;
 			}
 			else
 			{
-				iTmp = bDt[nNum] << 8;
+				iTmp = (bDt[nNum] & 0x000000FF) << 8;
 				iLow = bDt[nNum + 1];
 				iV = iTmp + (iLow & 0x000000FF);
 			}
